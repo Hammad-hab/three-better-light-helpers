@@ -3,8 +3,18 @@ import * as THREE from 'three'
 const MAX_LIGHT_NG = 0.01
 const SCALE_FACTOR = 10
 
+interface HelperParameters {
+    pthickness?: number,
+    effectiveRadiusShader?: string ,
+    minOpacity?: number
+    lightIconScale?: number,
+    enableEffectiveRadius: boolean
+    enableLightColor: boolean
+}
+
 class BetterPointLightHelper extends THREE.Object3D {
     private targetLight: THREE.PointLight
+    public parameters: HelperParameters
     private baseSprite?: THREE.Sprite
     private radiSprite?: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
     public static _pointLightSprite: THREE.Texture
@@ -20,10 +30,16 @@ class BetterPointLightHelper extends THREE.Object3D {
        return Math.sqrt(intensity/MAX_LIGHT_NG)/SCALE_FACTOR
     }
 
-    constructor(pointLight: THREE.PointLight) {
+    constructor(pointLight: THREE.PointLight, parameters?:HelperParameters) {
         super()
         this.targetLight = pointLight
-
+        this.parameters = parameters ?? {
+            pthickness: 1,
+            minOpacity: 0.25,
+            lightIconScale: 0.15,
+            enableEffectiveRadius: true,
+            enableLightColor: true
+        }
         if (!BetterPointLightHelper._pointLightSprite)
             BetterPointLightHelper._loadpLightSprite()
 
@@ -34,27 +50,30 @@ class BetterPointLightHelper extends THREE.Object3D {
 
 
     private _createSprite() {
-        const cd = this.targetLight.intensity > 0.25 ? this.targetLight.intensity : 0.25
+        const cd = this.targetLight.intensity > (this.parameters.minOpacity ?? 0.25) ? this.targetLight.intensity : (this.parameters.minOpacity ?? 0.25)
         const spriteMaterial = new THREE.SpriteMaterial({
             map: BetterPointLightHelper._pointLightSprite,
             transparent: true,
             opacity: cd
         })
         this.baseSprite = new THREE.Sprite(spriteMaterial)
-        this.baseSprite.scale.setScalar(0.15)
+        this.baseSprite.scale.setScalar(this.parameters.lightIconScale ?? 0.15)
         this.add(this.baseSprite)
     }
 
     private _createDecayHelper() {
         const effectiveDistRadius = BetterPointLightHelper._getEffectiveDist(this.targetLight.intensity)
+        const pThickness = (100-(this.parameters.pthickness ?? 0))/100
+        const defaultColor = new THREE.Color(0xffffff)
+
         const geometry = new THREE.PlaneGeometry(1, 1); // Simple quad
         const material = new THREE.ShaderMaterial({
             transparent: true,
             depthWrite: false,
             uniforms: {
-                uColor: { value: this.targetLight.color },
+                uColor: { value: this.parameters.enableLightColor ? this.targetLight.color: defaultColor },
                 uInnerRadius: { 
-                    value: effectiveDistRadius * 99/100  // inner radius is 1% smaller than the outer radius
+                    value: effectiveDistRadius * pThickness  // inner radius is 1% smaller than the outer radius
                 },
                 uOuterRadius: { value: effectiveDistRadius },
                 uIntensity: { value: 1.0 }
@@ -98,14 +117,16 @@ class BetterPointLightHelper extends THREE.Object3D {
         });
 
         this.radiSprite = new THREE.Mesh(geometry, material);
-        this.add(this.radiSprite);
+
+        if (this.parameters.enableEffectiveRadius)
+            this.add(this.radiSprite);
     }
 
     update() {
         this.position.copy(this.targetLight.position)
         this.rotation.copy(this.targetLight.rotation)
 
-        const cd = this.targetLight.intensity > 0.25 ? this.targetLight.intensity : 0.25
+        const cd = this.targetLight.intensity > (this.parameters.minOpacity ?? 0.25) ? this.targetLight.intensity : (this.parameters.minOpacity ?? 0.25)
 
         if (this.radiSprite)
             this.radiSprite.material.uniforms.uIntensity.value = cd
