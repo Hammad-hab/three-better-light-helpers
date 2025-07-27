@@ -1,34 +1,18 @@
 import * as THREE from 'three'
-
-const MAX_LIGHT_NG = 0.01
-const SCALE_FACTOR = 10
+import { LightHelper } from './types'
 
 interface HelperParameters {
     pthickness?: number,
-    effectiveRadiusShader?: string ,
+    effectiveRadiusShader?: string,
     minOpacity?: number
     lightIconScale?: number,
     enableEffectiveRadius: boolean
     enableLightColor: boolean
 }
 
-class BetterPointLightHelper extends THREE.Object3D {
-    private targetLight: THREE.PointLight
-    public parameters: HelperParameters
-    private baseSprite?: THREE.Sprite
+class BetterPointLightHelper extends LightHelper<THREE.PointLight, HelperParameters> {
     private radiSprite?: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
     public static _pointLightSprite: THREE.Texture
-
-    private static _loadpLightSprite() 
-    {
-        const textureLoader = new THREE.TextureLoader()
-        BetterPointLightHelper._pointLightSprite = textureLoader.load('/pointlight.png')
-    }
-    
-    private static _getEffectiveDist(intensity: number) 
-    {
-       return Math.sqrt(intensity/MAX_LIGHT_NG)/SCALE_FACTOR
-    }
 
     constructor(pointLight: THREE.PointLight, parameters?:HelperParameters) {
         super()
@@ -41,11 +25,10 @@ class BetterPointLightHelper extends THREE.Object3D {
             enableLightColor: true
         }
         if (!BetterPointLightHelper._pointLightSprite)
-            BetterPointLightHelper._loadpLightSprite()
+            this._loadpLightSprite()
 
         this._createSprite()
-        this._createDecayHelper()
-
+        this._createEffectiveRadiusHelper()
     }
 
 
@@ -61,7 +44,7 @@ class BetterPointLightHelper extends THREE.Object3D {
         this.add(this.baseSprite)
     }
 
-    private _createDecayHelper() {
+    private _createEffectiveRadiusHelper() {
         const effectiveDistRadius = BetterPointLightHelper._getEffectiveDist(this.targetLight.intensity)
         const pThickness = (100-(this.parameters.pthickness ?? 0))/100
         const defaultColor = new THREE.Color(0xffffff)
@@ -122,16 +105,20 @@ class BetterPointLightHelper extends THREE.Object3D {
             this.add(this.radiSprite);
     }
 
-    update() {
-        this.position.copy(this.targetLight.position)
-        this.rotation.copy(this.targetLight.rotation)
+    protected _loadpLightSprite() 
+    {
+        const textureLoader = LightHelper.TLoader
+        BetterPointLightHelper._pointLightSprite = textureLoader.load('/pointlight.png')
+    }
+
+
+    public update() {
+        super.update()
 
         const cd = this.targetLight.intensity > (this.parameters.minOpacity ?? 0.25) ? this.targetLight.intensity : (this.parameters.minOpacity ?? 0.25)
-
         if (this.radiSprite)
             this.radiSprite.material.uniforms.uIntensity.value = cd
     }
 }
 
-
-export default BetterPointLightHelper
+export const PointLightHelper = BetterPointLightHelper

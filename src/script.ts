@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Arrow from './helpers/_arrow'
-import BetterPointLightHelper from './helpers/pointLightHelper'
+import {PointLightHelper} from './helpers/pointLightHelper'
+import { DirectionalLightHelper } from './helpers/directionalLightHelper'
+import { SpotLightHelper } from './helpers/spotLightHelper'
 /**
  * Constants
  */
@@ -37,7 +39,7 @@ controls.enableDamping = true
 /**
  * Renderer
  */
-const renderer = new THREE.WebGLRenderer({ canvas })
+const renderer = new THREE.WebGLRenderer({ canvas,})
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(DPR)
 renderer.shadowMap.enabled = true
@@ -63,9 +65,9 @@ window.addEventListener('resize', () => {
 const tloader = new THREE.TextureLoader()
 const texture = tloader.load('/tool.jpg')
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1, 32, 32),
+    new THREE.PlaneGeometry(1,1, 32, 32),
     new THREE.MeshStandardMaterial({
-        map: texture
+        // map: texture
     })
 )
 floor.rotation.x = -Math.PI / 2
@@ -76,14 +78,15 @@ scene.add(floor)
 /**
  * Lights
  */
-const pointLight = new THREE.PointLight()
-pointLight.position.y += 0.5
-pointLight.castShadow = true
-pointLight.shadow.radius = 20
-scene.add(pointLight)
+const pointLight = new THREE.SpotLight(0xfff, 5, 1, Math.PI*0.1, 0, 10)
+pointLight.position.y -= 0.5
+pointLight.map = texture
+scene.add(pointLight, pointLight.target)
 
-const lhelper = new BetterPointLightHelper(pointLight)
+const lhelper = new SpotLightHelper(pointLight,)
 scene.add(lhelper)
+
+const lhelper2 = new THREE.SpotLightHelper(pointLight)
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
 scene.add(ambientLight)
@@ -102,8 +105,10 @@ function animate() {
     renderer.render(scene, camera)
     lhelper.update()
     controls.update()
-    pointLight.position.x = Math.sin(elapsedTime)
-    pointLight.intensity = Math.abs(Math.sin(elapsedTime))
+
+    pointLight.position.z =(Math.sin(elapsedTime))
+    lhelper2.update()
+
     requestAnimationFrame(animate)
 }
 animate()

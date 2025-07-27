@@ -2,18 +2,21 @@ import * as THREE from 'three'
 
 class Arrow extends THREE.Object3D
 {
-    public readonly arrowHead: THREE.Mesh<THREE.ConeGeometry, THREE.MeshMatcapMaterial>
-    public readonly arrowBody: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshMatcapMaterial>
+    public readonly arrowHead: THREE.Mesh<THREE.ConeGeometry, THREE.MeshBasicMaterial>
+    public readonly arrowBody: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial>
 
     constructor(length: number=0.5, coneh: number=0.05, thickness: number=0.05) {
         super()
+        const mat = new THREE.MeshBasicMaterial({depthTest: false})
+        
         this.arrowHead = new THREE.Mesh(
             new THREE.ConeGeometry(thickness*2, coneh),
-            new THREE.MeshMatcapMaterial()
+            mat
         )
+
         this.arrowBody = new THREE.Mesh(
             new THREE.CylinderGeometry(thickness, thickness, length),
-            new THREE.MeshMatcapMaterial()
+            mat
         )
         this.arrowHead.position.y += (length)/2 
         this.arrowBody.position.y -= coneh/2
