@@ -12,10 +12,10 @@ This library provides enhanced light helpers for [Three.js](https://threejs.org/
 
 ## Installation
 
-This project uses `pnpm` for package management.
+This project uses `npm` or `pnpm` for package management.
 
 ```bash
-pnpm install
+pnpm i threejs-better-light-helpers
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ Here's how you can integrate and use the light helpers in your Three.js project:
 First, import the desired helper classes:
 
 ```typescript
-import { DirectionalLightHelper, PointLightHelper, SpotLightHelper } from './src/helpers';
+import { DirectionalLightHelper, PointLightHelper, SpotLightHelper } from 'threejs-better-light-helpers';
 ```
 
 Then, instantiate and add them to your scene:
@@ -34,7 +34,7 @@ Then, instantiate and add them to your scene:
 
 ```typescript
 import * as THREE from 'three';
-import { DirectionalLightHelper } from './src/helpers';
+import { DirectionalLightHelper } from 'threejs-better-light-helpers';
 
 const scene = new THREE.Scene();
 const dirLight = new THREE.DirectionalLight(0xff0fff, 1);
@@ -55,7 +55,7 @@ scene.add(dirLightHelper);
 
 ```typescript
 import * as THREE from 'three';
-import { PointLightHelper } from './src/helpers';
+import { PointLightHelper } from 'threejs-better-light-helpers';
 
 const scene = new THREE.Scene();
 const pointLight = new THREE.PointLight(0xffffff, 3);
@@ -74,7 +74,7 @@ scene.add(pointLightHelper);
 
 ```typescript
 import * as THREE from 'three';
-import { SpotLightHelper } from './src/helpers';
+import { SpotLightHelper } from 'threejs-better-light-helpers';
 
 const scene = new THREE.Scene();
 const spotLight = new THREE.SpotLight(0xffffff, 5, 0, Math.PI * 0.2, 1);
@@ -145,11 +145,11 @@ These indicators are present across multiple light helper types, although their 
     *   `lightIconScale`: (Number, default: 0.15) Controls the uniform scale of the icon.
 *   **Specifics per Light Type**:
     *   **DirectionalLightHelper**: Uses the `dirlight.png` icon.
-        ![Directional Light Icon](src/helpers/reasources/dirlight.png)
+<img src="package/helpers/reasources/dirlight.png" alt="Directional Light Icon" width="100" style="display: block; margin-left: auto; margin-right: auto;">
     *   **PointLightHelper**: Uses the `pointlight.png` icon. Its opacity dynamically adjusts based on the light's intensity (`targetLight.intensity`) and the `minOpacity` parameter. This makes dimmer lights appear more transparent.
-        ![Point Light Icon](src/helpers/reasources/pointlight.png)
+<img src="package/helpers/reasources/pointlight.png" alt="Point Light Icon" width="100" style="display: block; margin-left: auto; margin-right: auto;">
     *   **SpotLightHelper**: Uses the `spotlight.png` icon.
-        ![Spot Light Icon](src/helpers/reasources/spotlight.png)
+<img src="package/helpers/reasources/spotlight.png" alt="Spot Light Icon" width="100" style="display: block; margin-left: auto; margin-right: auto;">
 
 #### 2. Shadow Indicator
 
@@ -157,7 +157,7 @@ These indicators are present across multiple light helper types, although their 
 *   **Appearance**: A small 2D sprite (a circular icon with a shadow symbol) positioned typically below the main light icon.
 *   **Conditions**: This indicator is only visible if the `targetLight.castShadow` property is set to `true`.
 *   **Image**:
-    ![Has Shadows Indicator](src/helpers/reasources/has_shadows_indigator.png)
+<img src="package/helpers/reasources/has_shadows_indigator.png" alt="Has Shadows Indicator" width="100" style="display: block; margin-left: auto; margin-right: auto;">
 
 #### 3. Effective Radius / Light Cone
 
@@ -191,10 +191,10 @@ These indicators are present across multiple light helper types, although their 
 *   **Appearance Changes**:
     *   If `trackTarget` parameter is `true`, the target sprite's color will change to a distinct blue tint (RGB: 117, 180, 252) to indicate active tracking, and the `THREE.Mesh` tracker will be visible at the target's location.
 *   **Parameters Affecting Appearance**:
-    *   `trackTarget`: (Boolean, default: `false`) When `true`, enables active visual tracking of the target's position with the blue-tinted sprite and the `THREE.Mesh` tracker.
+    *   `trackTarget`: (Boolean, default: `false`) When `true`, enables active visual tracking of the target's position with the blue-tinted sprite and a separate mesh tracker.
     *   `disableTargetMatrixUpdate`: (Boolean, default: `false`) If `true`, prevents the helper from calling `targetLight.target.updateMatrixWorld()`. This is useful if you manage target updates externally.
 *   **Image**:
-    ![Has Added Target Indicator](src/helpers/reasources/has_added_target.png)
+<img src="package/helpers/reasources/has_added_target.png" alt="Has Added Target Indicator" width="100" style="display: block; margin-left: auto; margin-right: auto;">
 
 ### SpotLight Specific Indicator
 
