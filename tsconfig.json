@@ -9,9 +9,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "types": ["vite/client", "node"],
-    "baseUrl": "./src",
+    "baseUrl": "package",
     "allowJs": true
   },
-  "include": ["src"],
+  "include": ["package"],
   "exclude": ["dist", "node_modules"]
 }
