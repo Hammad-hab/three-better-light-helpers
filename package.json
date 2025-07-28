@@ -1,7 +1,16 @@
 {
   "name": "threejs-better-light-helpers",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
+  "keywords": [
+    "threejs",
+    "helpers",
+    "threejs-helpers",
+    "light-helpers",
+    "threejs-lights",
+    "lights",
+    "lighting"
+  ],
   "main": "./package/helpers/index.ts",
   "license": "MIT",
   "dependencies": {
