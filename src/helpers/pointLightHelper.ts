@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import { LightHelper } from './types'
+import sprite_path from './reasources/pointlight.png'
+import has_shadows from './reasources/has_shadows_indigator.png'
 
 interface HelperParameters {
     pthickness?: number,
@@ -14,51 +16,70 @@ class BetterPointLightHelper extends LightHelper<THREE.PointLight, HelperParamet
     private radiSprite?: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
     public static _pointLightSprite: THREE.Texture
 
-    constructor(pointLight: THREE.PointLight, parameters?:HelperParameters) {
+    constructor(pointLight: THREE.PointLight, parameters?: HelperParameters) {
         super()
+        this.name = 'PLIGHTHELPER'
         this.targetLight = pointLight
-        this.parameters = parameters ?? {
+        this.parameters = {
             pthickness: 1,
             minOpacity: 0.25,
             lightIconScale: 0.15,
             enableEffectiveRadius: true,
-            enableLightColor: true
+            enableLightColor: true,
+            ...parameters
         }
         if (!BetterPointLightHelper._pointLightSprite)
             this._loadpLightSprite()
 
-        this._createSprite()
+        this.baseSprite = this._createSprite(BetterPointLightHelper._pointLightSprite)
+        this.add(this.baseSprite)
+        this.hasShadowsEnabled()
         this._createEffectiveRadiusHelper()
+
     }
 
-
-    private _createSprite() {
+    private _createSprite(_sprite: THREE.Texture) {
         const cd = this.targetLight.intensity > (this.parameters.minOpacity ?? 0.25) ? this.targetLight.intensity : (this.parameters.minOpacity ?? 0.25)
         const spriteMaterial = new THREE.SpriteMaterial({
-            map: BetterPointLightHelper._pointLightSprite,
+            map: _sprite,
             transparent: true,
-            opacity: cd
+            opacity: cd,
         })
-        this.baseSprite = new THREE.Sprite(spriteMaterial)
-        this.baseSprite.scale.setScalar(this.parameters.lightIconScale ?? 0.15)
-        this.add(this.baseSprite)
+        const sprite = new THREE.Sprite(spriteMaterial)
+
+        if (sprite) {
+            sprite.scale.setScalar(this.parameters.lightIconScale ?? 0.15)
+        }
+        return sprite
     }
 
+
+    private hasShadowsEnabled() {
+        const hasShadows = this.targetLight.castShadow
+        if (!hasShadows) return
+
+        const shadow_texture = LightHelper.TLoader.load(has_shadows)
+        const sprite = this._createSprite(shadow_texture)
+        sprite.position.y -= 0.25
+        this.add(sprite)
+    }
+
+
     private _createEffectiveRadiusHelper() {
-        const effectiveDistRadius = BetterPointLightHelper._getEffectiveDist(this.targetLight.intensity)
-        const pThickness = (100-(this.parameters.pthickness ?? 0))/100
+        const effectiveDistRadius = BetterPointLightHelper._getEffectiveDist(this.targetLight.intensity, 0.01, 10)
+        const pThickness = (100 - (this.parameters.pthickness ?? 10)) / 100
         const defaultColor = new THREE.Color(0xffffff)
 
-        const geometry = new THREE.PlaneGeometry(1, 1); // Simple quad
+        const geometry = new THREE.PlaneGeometry(effectiveDistRadius, effectiveDistRadius); // Simple quad
         const material = new THREE.ShaderMaterial({
             transparent: true,
             depthWrite: false,
             uniforms: {
-                uColor: { value: this.parameters.enableLightColor ? this.targetLight.color: defaultColor },
-                uInnerRadius: { 
-                    value: effectiveDistRadius * pThickness  // inner radius is 1% smaller than the outer radius
+                uColor: { value: this.parameters.enableLightColor ? this.targetLight.color : defaultColor },
+                uInnerRadius: {
+                    value: 1.0 * pThickness  // inner radius is 1% smaller than the outer radius
                 },
-                uOuterRadius: { value: effectiveDistRadius },
+                uOuterRadius: { value: 1.0 },
                 uIntensity: { value: 1.0 }
             },
             vertexShader: `
@@ -100,17 +121,14 @@ class BetterPointLightHelper extends LightHelper<THREE.PointLight, HelperParamet
         });
 
         this.radiSprite = new THREE.Mesh(geometry, material);
-
         if (this.parameters.enableEffectiveRadius)
             this.add(this.radiSprite);
     }
 
-    protected _loadpLightSprite() 
-    {
+    protected _loadpLightSprite() {
         const textureLoader = LightHelper.TLoader
-        BetterPointLightHelper._pointLightSprite = textureLoader.load('/pointlight.png')
+        BetterPointLightHelper._pointLightSprite = textureLoader.load(sprite_path)
     }
-
 
     public update() {
         super.update()

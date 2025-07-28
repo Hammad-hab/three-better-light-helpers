@@ -1,9 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import Arrow from './helpers/_arrow'
-import {PointLightHelper} from './helpers/pointLightHelper'
-import { DirectionalLightHelper } from './helpers/directionalLightHelper'
-import { SpotLightHelper } from './helpers/spotLightHelper'
+import { PointLightHelper, DirectionalLightHelper, SpotLightHelper } from './helpers'
 /**
  * Constants
  */
@@ -39,7 +37,7 @@ controls.enableDamping = true
 /**
  * Renderer
  */
-const renderer = new THREE.WebGLRenderer({ canvas,})
+const renderer = new THREE.WebGLRenderer({ canvas, })
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.setPixelRatio(DPR)
 renderer.shadowMap.enabled = true
@@ -65,7 +63,7 @@ window.addEventListener('resize', () => {
 const tloader = new THREE.TextureLoader()
 const texture = tloader.load('/tool.jpg')
 const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(1,1, 32, 32),
+    new THREE.PlaneGeometry(10, 10, 32, 32),
     new THREE.MeshStandardMaterial({
         // map: texture
     })
@@ -78,17 +76,39 @@ scene.add(floor)
 /**
  * Lights
  */
-const pointLight = new THREE.SpotLight(0xfff, 5, 1, Math.PI*0.1, 0, 10)
-pointLight.position.y -= 0.5
-pointLight.map = texture
-scene.add(pointLight, pointLight.target)
+const spotLight = new THREE.SpotLight(0xffffff, 5, 0, Math.PI * 0.2, 1)
+spotLight.map = texture
+spotLight.position.y += 1
+spotLight.castShadow = true
 
-const lhelper = new SpotLightHelper(pointLight,)
-scene.add(lhelper)
 
-const lhelper2 = new THREE.SpotLightHelper(pointLight)
+const pointLight = new THREE.PointLight(0xffffff, 3)
+pointLight.position.y += 1
+pointLight.position.x += 3.0
+pointLight.castShadow = true
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+
+const dirLight = new THREE.DirectionalLight(0xff0fff, 1)
+dirLight.position.y += 1
+dirLight.position.x -= 3.0
+dirLight.castShadow = true
+
+
+scene.add(spotLight, pointLight, dirLight, dirLight.target, spotLight.target)
+
+const lhelper = new SpotLightHelper(spotLight, {
+    trackTarget: true
+})
+const l2helper = new PointLightHelper(pointLight,)
+const l3helper = new DirectionalLightHelper(dirLight,{
+    trackTarget: true
+})
+const l4 = new THREE.DirectionalLightHelper(dirLight)
+
+scene.add(lhelper, l2helper, l3helper,)
+
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.01)
 scene.add(ambientLight)
 
 
@@ -101,13 +121,17 @@ function animate() {
     const elapsedTime = clock.getElapsedTime()
 
     // Update camera-related uniforms
-   
+    dirLight.target.updateMatrixWorld()
+    dirLight.target.position.x = Math.sin(elapsedTime)
+
     renderer.render(scene, camera)
     lhelper.update()
+    l2helper.update()
+    l3helper.update()
     controls.update()
 
-    pointLight.position.z =(Math.sin(elapsedTime))
-    lhelper2.update()
+    l4.update()
+
 
     requestAnimationFrame(animate)
 }

@@ -1,50 +1,105 @@
 import * as THREE from 'three'
 import { LightHelper } from './types'
 import Arrow from './_arrow'
+import sprite_path from './reasources/spotlight.png'
+import has_shadows from './reasources/has_shadows_indigator.png'
+import has_target from './reasources/has_added_target.png'
+
 
 interface HelperParameters {
-    renderAboveAll: boolean,
+    renderAboveAll?: boolean,
     lightIconScale?: number,
-    enableEffectiveRadius: boolean
-    enableLightColor: boolean
+    enableEffectiveRadius?: boolean
+    enableLightColor?: boolean
     coneRadialSegments?: number
-    renderDirArrow: boolean
-    enableMap: boolean
+    renderDirArrow?: boolean
+    enableMap?: boolean,
+    disableTargetMatrixUpdate?: boolean,
+    trackTarget?: boolean,
 }
 
 class BetterSpotLightHelper extends LightHelper<THREE.SpotLight, HelperParameters> {
     public static _spotLightSprite: THREE.Texture
     protected _dirarrow!: Arrow
     protected indigator?: THREE.Mesh
+    private _targetTracker?: THREE.Mesh
+    public direction!: THREE.Vector3
 
     constructor(spotLight: THREE.SpotLight, parameters?: HelperParameters) {
         super()
         this.name = 'SPLIGHTHELPER'
         this.targetLight = spotLight
-        this.parameters = parameters ?? {
+        this.parameters = {
             renderAboveAll: false,
             renderDirArrow: true,
             lightIconScale: 0.15,
             enableEffectiveRadius: true,
             enableLightColor: true,
             coneRadialSegments: 4,
-            enableMap: true
+            enableMap: true,
+            disableTargetMatrixUpdate: false,
+            trackTarget: false,
+            ...parameters
         }
         this._loadpLightSprite()
-        this._createSprite()
+        this.baseSprite = this._createSprite(BetterSpotLightHelper._spotLightSprite)
         this._createDirArrow()
+        this.hasShadowsEnabled()
+        this.hasTarget()
+
+        this.createTargetTracker()
     }
 
-    private _createSprite() {
+    private _createSprite(_sprite: THREE.Texture) {
         const spriteMaterial = new THREE.SpriteMaterial({
-            map: BetterSpotLightHelper._spotLightSprite,
+            map: _sprite,
             transparent: true,
+            depthTest: false
         })
-        this.baseSprite = new THREE.Sprite(spriteMaterial)
+        const sprite = new THREE.Sprite(spriteMaterial)
 
-        if (this.baseSprite) {
-            this.baseSprite.scale.setScalar(0.15)
+        if (sprite) {
+            sprite.scale.setScalar(0.15)
         }
+        return sprite
+    }
+
+
+    private hasShadowsEnabled() {
+        const hasShadows = this.targetLight.castShadow
+        if (!hasShadows) return
+
+        const shadow_texture = LightHelper.TLoader.load(has_shadows)
+        const sprite = this._createSprite(shadow_texture)
+        sprite.position.y -= this._dirarrow.length / 2
+        this.add(sprite)
+    }
+
+    private hasTarget() {
+        const targetParent = this.targetLight.target.parent
+        if (!targetParent) return
+        const target_texture = LightHelper.TLoader.load(has_target)
+        const sprite = this._createSprite(target_texture)
+
+        sprite.position.y -= this._dirarrow.length + this._dirarrow.coneh
+        
+        if (this.parameters.trackTarget)
+            sprite.material.color = new THREE.Color('rgba(117, 180, 252, 1)')
+
+        this.add(sprite)
+    }
+
+    private createTargetTracker() {
+        const targetParent = this.targetLight.target.parent
+        if (!targetParent) return
+
+        this._targetTracker = new THREE.Mesh(
+            new THREE.CircleGeometry(0.1,),
+            new THREE.MeshBasicMaterial({ side: 2, depthTest: false })
+        )
+
+        this._targetTracker.rotation.x += Math.PI * 0.5
+        targetParent.add(this._targetTracker)
     }
 
     private static _computeVertexColors(geometry: THREE.ConeGeometry, _lightColor: THREE.Color) {
@@ -74,8 +129,8 @@ class BetterSpotLightHelper extends LightHelper<THREE.SpotLight, HelperParameter
         this._dirarrow.arrowBody.material.depthTest = !this.parameters.renderAboveAll
         this._dirarrow.arrowHead.material.depthTest = !this.parameters.renderAboveAll
 
-        this._dirarrow.arrowBody.material.visible = this.parameters.renderDirArrow
-        this._dirarrow.arrowHead.material.visible = this.parameters.renderDirArrow
+        this._dirarrow.arrowBody.material.visible = this.parameters.renderDirArrow!
+        this._dirarrow.arrowHead.material.visible = this.parameters.renderDirArrow!
 
         const eff = LightHelper._getEffectiveDist(this.targetLight.intensity) - this.targetLight.distance
 
@@ -96,10 +151,10 @@ class BetterSpotLightHelper extends LightHelper<THREE.SpotLight, HelperParameter
         this._dirarrow.arrowHead.position.y += 0.5
         this._dirarrow.add(cone)
 
-        if (this.parameters.enableMap) {
+        if (this.parameters.enableMap && this.targetLight.map) {
             const plane = new THREE.Mesh(
                 new THREE.PlaneGeometry(this.targetLight.angle, this.targetLight.angle),
-                new THREE.MeshBasicMaterial({ side: 2, map: this.targetLight.map })
+                new THREE.MeshBasicMaterial({ side: 2, map: this.targetLight.map, opacity: 0.5, transparent: true, depthTest: true })
             )
             plane.position.y += eff
             plane.rotation.x += Math.PI * 0.5
@@ -111,7 +166,7 @@ class BetterSpotLightHelper extends LightHelper<THREE.SpotLight, HelperParameter
 
     protected _loadpLightSprite(): void {
         const textureLoader = LightHelper.TLoader
-        BetterSpotLightHelper._spotLightSprite = textureLoader.load('/spotlight.png')
+        BetterSpotLightHelper._spotLightSprite = textureLoader.load(sprite_path)
     }
 
     public update() {
@@ -119,14 +174,14 @@ class BetterSpotLightHelper extends LightHelper<THREE.SpotLight, HelperParameter
 
         const from = this.targetLight.position.clone()
         const to = this.targetLight.target.position.clone()
+        this.direction = this._dirarrow.pointAtVector3(from, to)
+        if (!this.parameters.disableTargetMatrixUpdate) {
+            this.targetLight.target.updateMatrixWorld()
+        }
 
-        const dir = new THREE.Vector3().subVectors(to, from).normalize()
-
-        // Align the arrow to look in the light's direction
-        const quaternion = new THREE.Quaternion()
-        quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir) // assuming Y+ is arrow's default direction
-        this._dirarrow.setRotationFromQuaternion(quaternion)
-
+        if (this._targetTracker && this.parameters.trackTarget) {
+            this._targetTracker.position.set(to.x, to.y, to.z)
+        }
     }
 }
 

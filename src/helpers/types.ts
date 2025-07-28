@@ -1,8 +1,6 @@
 import * as THREE from 'three'
 
 
-const MAX_LIGHT_NG = 0.01
-const SCALE_FACTOR = 10
 
 abstract class LightHelper<L extends THREE.Light, P extends Object> extends THREE.Object3D {
     protected targetLight!: L
@@ -12,7 +10,7 @@ abstract class LightHelper<L extends THREE.Light, P extends Object> extends THRE
 
     public static TLoader = new THREE.TextureLoader();
 
-    protected static _getEffectiveDist(intensity: number) {
+    protected static _getEffectiveDist(intensity: number, MAX_LIGHT_NG: number=0.01, SCALE_FACTOR: number=10) {
         return Math.sqrt(intensity / MAX_LIGHT_NG) / SCALE_FACTOR // d = sqrt(intensity/intensity_at_point)
     }
 
@@ -26,6 +24,4 @@ abstract class LightHelper<L extends THREE.Light, P extends Object> extends THRE
 
 export {
     LightHelper,
-    MAX_LIGHT_NG,
-    SCALE_FACTOR
 }
