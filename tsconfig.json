@@ -12,6 +12,6 @@
     "baseUrl": "package",
     "allowJs": true
   },
-  "include": ["package"],
+  "include": ["package", "package/script.ts"],
   "exclude": ["dist", "node_modules"]
 }
